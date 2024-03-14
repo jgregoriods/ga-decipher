@@ -1,0 +1,133 @@
+from bigram_model import BigramModel
+from genetic_algorithm import GeneticAlgorithm
+from processing import split_japanese_syllables, get_top_symbols
+from scoring import calculate_final_score
+
+"""
+import numpy as np
+
+
+with open("data/rapanui.txt", "r") as file:
+    barthel = file.read().splitlines()
+
+from bigram_model import BigramModel
+from scoring import decode_texts, calculate_final_score
+from processing import split_japanese_syllables, split_syllables
+from genetic_algorithm import GeneticAlgorithm
+
+
+with open("data/japanese.txt", "r") as file:
+    japanese = file.read().splitlines()
+
+with open("data/hiragana.txt", "r") as file:
+    hiragana = file.read().splitlines()
+
+
+japanese_syllables = [split_japanese_syllables(line) for line in japanese]
+hiragana = [list(x) for x in hiragana]
+
+
+with open("data/rongorongo_independent.txt", "r") as file:
+    rongorongo = file.read().splitlines()
+
+rapanui_syllables = [split_syllables(line) for line in barthel]
+rongorongo = [x.split() for x in rongorongo]
+
+bigram_model = BigramModel()
+bigram_model.fit(rapanui_syllables)
+
+def get_top_symbols(corpus, n, ignore=[]):
+    symbols = {}
+    for line in corpus:
+        for symbol in line:
+            symbols[symbol] = symbols.get(symbol, 0) + 1
+    for symbol in ignore:
+        symbols.pop(symbol, None)
+    return sorted(symbols, key=symbols.get, reverse=True)[:n]
+
+
+japanese_target = get_top_symbols(japanese_syllables, 50)
+japanese_source = get_top_symbols(hiragana, 50)
+
+rongo_source = get_top_symbols(rongorongo, 48, ["?"])
+rongo_target = get_top_symbols(rapanui_syllables, 48)
+
+print(rongo_source)
+print(rongo_target)
+
+correct_key = ['i', 'ta', 'shi', 'ka', 'n', 'u', 'ha', 'no',
+               'na', 'ni', 'te', 't', 'ku', 'to', 'ma', 'su',
+               'ko', 'de', 'ga', 'ki', 're', 'da', 'wo', 'a',
+               'ru', 'wa', 'o', 'mo', 'yo', 'yo', 'ji', 'chi',
+               'ra', 'ri', 'tsu', 'so', 'sa', 'ke', 'e', 'mi',
+               'do', 'se', 'ne', 'ya', 'ho', 'yu', 'ro', 'hi',
+               'me', 'ya']
+
+def fitness_function(cipher_key):
+    return calculate_final_score(rongorongo, cipher_key, bigram_model)
+
+
+ga = GeneticAlgorithm(rongo_source, rongo_target, 2000, 1000, 0, 0.8, 0.5, fitness_function)
+ga.evolve(100)
+
+res = 0
+for i in range(50):
+    if ga.genomes[0].genes[i] == correct_key[i]:
+        print(japanese_source[i], ga.genomes[0].genes[i])
+        res += 1
+print(res/50)
+
+"""
+
+
+def main():
+    source_file = "data/hiragana.txt"
+    target_file = "data/japanese.txt"
+
+    num_symbols = 48
+    ignore = ["?"]
+
+    population_size = 2000
+    num_parents = 1000
+    mutation_rate = 0.5
+    crossover_rate = 0.8
+    generations = 100
+
+    with open(source_file, "r") as file:
+        source_text = file.read().splitlines()
+
+    with open(target_file, "r") as file:
+        target_text = file.read().splitlines()
+
+    bigram_model = BigramModel()
+    bigram_model.fit(source_text)
+
+    source_text_split = [list(x) for x in source_text]
+    target_text_split = [split_japanese_syllables(line) for line in target_text]
+
+    source_symbols = get_top_symbols(source_text_split, num_symbols, ignore)
+    target_symbols = get_top_symbols(target_text_split, num_symbols)
+
+    print(source_symbols)
+    print(target_symbols)
+
+
+    def fitness_function(cipher_key):
+        return calculate_final_score(source_text_split, cipher_key, bigram_model)
+
+
+    ga = GeneticAlgorithm(
+        source_symbols,
+        target_symbols,
+        population_size,
+        num_parents,
+        0,
+        crossover_rate,
+        mutation_rate,
+        fitness_function
+    )
+    ga.evolve(generations)
+
+
+if __name__ == "__main__":
+    main()
