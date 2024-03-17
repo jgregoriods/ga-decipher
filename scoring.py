@@ -1,16 +1,45 @@
-def decode_line(line, cipher_key):
+from typing import List, Dict
+from ngram_model import NgramModel
+
+
+def decode_line(line: List[str], cipher_key: Dict[str, str]) -> str:
+    """
+    Decodes a line using a cipher key.
+
+    Parameters
+    ----------
+    line : List[str]
+        The line to decode.
+    cipher_key : Dict[str, str]
+        The cipher key to use.
+
+    Returns
+    -------
+    str
+        The decoded line.
+    """
     decoded = []
     for symbol in line:
-        if symbol in cipher_key:
-            decoded.append(cipher_key[symbol])
-        else:
-            decoded.append("_")
-    return " ".join(decoded)
+        decoded.append(cipher_key.get(symbol, '_'))
+    return ' '.join(decoded)
 
 
-# source texts must be passed as a 2d array
-# e.g. [["1", "2", "1", "2"], ["3", "5", "3", "5"]]
-def decode_texts(texts, cipher_key):
+def decode_texts(texts: List[List[str]], cipher_key: Dict[str, str]) -> List[str]:
+    """
+    Decodes a text using a cipher key.
+
+    Parameters
+    ----------
+    texts : List[List[str]]
+        The texts to decode.
+    cipher_key : Dict[str, str]
+        The cipher key to use.
+
+    Returns
+    -------
+    List[str]
+        The decoded texts.
+    """
     decoded_texts = []
     for line in texts:
         decoded_line = decode_line(line, cipher_key)
@@ -18,9 +47,25 @@ def decode_texts(texts, cipher_key):
     return decoded_texts
 
 
-# given a decipherment key, apply it to all independent
-# texts and score the result
-def calculate_final_score(source_texts, cipher_key, bigram_model):
+def calculate_final_score(source_texts: List[List[str]], cipher_key: Dict[str, str],
+                          ngram_model: NgramModel) -> float:
+    """
+    Calculates the final score of a cipher key.
+
+    Parameters
+    ----------
+    source_texts : List[List[str]]
+        The source texts to decode.
+    cipher_key : Dict[str, str]
+        The cipher key to use.
+    ngram_model : NgramModel
+        The n-gram model to use.
+
+    Returns
+    -------
+    float
+        The final score of the cipher key.
+    """
     decoded_texts = decode_texts(source_texts, cipher_key)
     all_sequences = []
     for line in decoded_texts:
@@ -29,6 +74,6 @@ def calculate_final_score(source_texts, cipher_key, bigram_model):
         all_sequences.extend(valid_sequences)
     score = 0
     for sequence in all_sequences:
-        score += bigram_model.score(sequence.split())
+        score += ngram_model.score(sequence.split())
     return score
 
