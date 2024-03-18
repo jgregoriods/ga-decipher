@@ -20,7 +20,8 @@ class Genome:
         The genes of the genome (same elements as in target symbols).
         If not provided, the genes are target symbols randomly shuffled.
     score : float
-        The score of the genome.
+        The score of the genome. We use -1 to indicate that the genome has not
+        been evaluated yet.
     freeze : Dict[str, str]
         A dictionary of symbols that are fixed in the mapping.
 
@@ -33,8 +34,7 @@ class Genome:
                  score: float = -1, freeze: Dict[str, str] = dict()) -> None:
         random_symbols = target_symbols[:]
         if freeze:
-            random_symbols = [i for i in random_symbols
-                              if i not in list(freeze.values())]
+            random_symbols = [i for i in random_symbols if i not in freeze.values()]
         np.random.shuffle(random_symbols)
         self.genes = genes or random_symbols
         self.score = score
@@ -43,8 +43,7 @@ class Genome:
         """
         Mutates the genome by randomly swapping two genes.
         """
-        j, k = np.random.choice([i for i in range(len(self.genes) - 1)],
-                                size=2, replace=False)
+        j, k = np.random.choice(range(len(self.genes) - 1), size=2, replace=False)
         self.genes[j], self.genes[k] = self.genes[k], self.genes[j]
         self.score = -1
 
@@ -94,7 +93,7 @@ class GeneticAlgorithm:
     def __init__(self, source_symbols: List[str], target_symbols: List[str],
                  source_text: List[List[str]], model: NgramModel,
                  population_size: int, num_parents: int, prob_mut: float,
-                 prob_cross: float, freeze: Dict[str, str] = dict(),
+                 prob_cross: float, freeze: Dict[str, str] = {},
                  n_cores: int = 0) -> None:
         self.source_symbols = source_symbols
         self.target_symbols = target_symbols
@@ -109,13 +108,11 @@ class GeneticAlgorithm:
         self.n_cores = n_cores if n_cores > 0 else mp.cpu_count()
 
         if freeze:
-            self.source_symbols = [symbol for symbol in self.source_symbols
-                                   if symbol not in freeze]
+            self.source_symbols = [symbol for symbol in self.source_symbols if symbol not in freeze]
 
         print('Initializing population...')
         start = time.time()
-        self.genomes = [Genome(target_symbols, freeze=self.freeze)
-                        for i in range(self.population_size)]
+        self.genomes = [Genome(target_symbols, freeze=self.freeze) for _ in range(self.population_size)]
         pool = mp.Pool(self.n_cores)
         population_genes = [{self.source_symbols[i]: genome.genes[i]
                              for i in range(len(self.source_symbols))}
@@ -139,8 +136,7 @@ class GeneticAlgorithm:
         self.genomes.sort(key=lambda x: x.score, reverse=True)
         self.best_scores = [self.genomes[0].score]
         self.avg_scores = [np.mean([genome.score for genome in self.genomes])]
-        self.best_key = {self.source_symbols[i]: self.genomes[0].genes[i]
-                         for i in range(len(self.source_symbols))}
+        self.best_key = {self.source_symbols[i]: self.genomes[0].genes[i] for i in range(len(self.source_symbols))}
         self.best_key.update(self.freeze)
 
     def fitness_function(self, cipher_key: Dict[str, str]) -> float:
@@ -200,7 +196,7 @@ class GeneticAlgorithm:
             children = []
             for j in range(0, len(parents), 2):
                 parent1 = parents[j]
-                parent2 = parents[j+1]
+                parent2 = parents[j + 1]
                 for k in range(self.num_children):
                     if np.random.random() < self.prob_cross:
                         new_genes = self.ox1(parent1.genes, parent2.genes)
@@ -231,8 +227,8 @@ class GeneticAlgorithm:
                              for i in range(len(self.source_symbols))}
             self.best_key.update(self.freeze)
 
-            if (i+1) % 10 == 0:
-                print(f'Generation {i+1} done')
+            if (i + 1) % 10 == 0:
+                print(f'Generation {i + 1} done')
                 print(f'Best: {self.best_scores[-1]}')
                 print(f'Avg: {self.avg_scores[-1]}')
                 print(f'Best key: {dict(zip(self.source_symbols[:5], self.genomes[0].genes[:5]))} ...\n')
@@ -250,16 +246,15 @@ class GeneticAlgorithm:
             The filename to save the plot to. If not provided, the plot is
             shown.
         """
-        plt.style.use('seaborn')
         plt.axes(xlabel='generation', ylabel='score')
-        plt.plot(self.best_scores, color='#F8766D')
-        plt.plot(self.avg_scores, color='black')
+        plt.plot(self.best_scores)
+        plt.plot(self.avg_scores)
         plt.legend(['best score', 'avg score'])
         if filename:
             try:
                 plt.savefig(filename)
-            except IOError:
-                print('Error: Unable to save plot to file.')
+            except IOError as e:
+                print(f'Error: Unable to save plot to file: {e}')
         else:
             plt.show()
 
@@ -276,6 +271,6 @@ class GeneticAlgorithm:
             with open(filename, 'w') as file:
                 for k, v in self.best_key.items():
                     file.write(f'{k} {v}\n')
-        except IOError:
-            print('Error: Unable to write to file.')
+        except IOError as e:
+            print(f'Error: Unable to write to file: {e}')
 

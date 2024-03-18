@@ -6,33 +6,59 @@ from genetic_algorithm import GeneticAlgorithm
 from processing import split_syllables, get_top_symbols, split_symbols
 
 
+DEFAULT_N_GRAM = 3
+DEFAULT_NUM_SYMBOLS = 50
+DEFAULT_POP_SIZE = 2000
+DEFAULT_NUM_PARENTS = 1000
+DEFAULT_MUTATION_RATE = 0.5
+DEFAULT_CROSSOVER_RATE = 0.8
+DEFAULT_GENERATIONS = 1000
+DEFAULT_N_CORES = 0
+
+
+def parse_arguments() -> argparse.Namespace:
+    """
+    Parse command line arguments.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('source', type=str, help='Source file')
+    parser.add_argument('target', type=str, help='Target file')
+    parser.add_argument('-ng', '--n-gram', type=int, default=DEFAULT_N_GRAM, help='N-gram')
+    parser.add_argument('-s', '--num-symbols', type=int, default=DEFAULT_NUM_SYMBOLS, help='Number of symbols')
+    parser.add_argument('-i', '--ignore', type=str, help='Ignore symbols')
+    parser.add_argument('-n', '--pop-size', type=int, default=DEFAULT_POP_SIZE, help='Population size')
+    parser.add_argument('-p', '--num-parents', type=int, default=DEFAULT_NUM_PARENTS, help='Number of parents')
+    parser.add_argument('-m', '--mutation-rate', type=float, default=DEFAULT_MUTATION_RATE, help='Mutation rate')
+    parser.add_argument('-c', '--crossover-rate', type=float, default=DEFAULT_CROSSOVER_RATE, help='Crossover rate')
+    parser.add_argument('-g', '--generations', type=int, default=DEFAULT_GENERATIONS, help='Number of generations')
+    parser.add_argument('-nc', '--n-cores', type=int, default=DEFAULT_N_CORES, help='Number of cores')
+    parser.add_argument('-e', '--eval', type=str, help='Evaluation file')
+    parser.add_argument('-o', '--output', type=str, help='Output folder')
+    return parser.parse_args()
+
+
 def main(args: argparse.Namespace) -> None:
+    """
+    Main function.
+    """
     source_file = args.source
     target_file = args.target
-
     n_gram = args.n_gram
-
     num_symbols = args.num_symbols
     ignore = ['?'] + args.ignore.split(',') if args.ignore else ['?']
-    population_size = args.pop_size
-    num_parents = args.num_parents
-    mutation_rate = args.mutation_rate
-    crossover_rate = args.crossover_rate
-    generations = args.generations
-    n_cores = args.n_cores
 
     try:
         with open(source_file, 'r') as file:
             source_text = file.read().splitlines()
-    except IOError:
-        print(f'Error: Could not read file {source_file}')
+    except IOError as e:
+        print(f'Error: Could not read source file {source_file}: {e}')
         return
 
     try:
         with open(target_file, 'r') as file:
             target_text = file.read().splitlines()
-    except IOError:
-        print(f'Error: Could not read file {target_file}')
+    except IOError as e:
+        print(f'Error: Could not read target file {target_file}: {e}')
         return
 
     source_text_split = [split_symbols(line) for line in source_text]
@@ -49,23 +75,24 @@ def main(args: argparse.Namespace) -> None:
         target_symbols,
         source_text_split,
         bigram_model,
-        population_size,
-        num_parents,
-        mutation_rate,
-        crossover_rate,
-        n_cores=n_cores
+        args.pop_size,
+        args.num_parents,
+        args.mutation_rate,
+        args.crossover_rate,
+        n_cores=args.n_cores
     )
-    ga.evolve(generations)
+    ga.evolve(args.generations)
 
     if args.output:
-        if not os.path.exists(args.output):
+        output_folder = args.output
+        if not os.path.exists(output_folder):
             try:
-                os.makedirs(args.output)
-            except OSError:
-                print(f'Error: Could not create directory {args.output}')
+                os.makedirs(output_folder)
+            except OSError as e:
+                print(f'Error: Could not create output directory {args.output}: {e}')
                 return
-        ga.write_result(os.path.join(args.output, 'best_key.txt'))
-        ga.plot(os.path.join(args.output, 'plot.png'))
+        ga.write_result(os.path.join(output_folder, 'best_key.txt'))
+        ga.plot(os.path.join(output_folder, 'plot.png'))
 
     if args.eval:
         try:
@@ -73,36 +100,16 @@ def main(args: argparse.Namespace) -> None:
                 eval_text = file.read().splitlines()
                 eval_symbols = [x.split() for x in eval_text]
                 eval_map = {x[0]: x[1] for x in eval_symbols}
-        except IOError:
-            print(f'Error: Could not read file {args.eval}')
+        except IOError as e:
+            print(f'Error: Could not read file {args.eval}: {e}')
             return
 
-        tot = 0
-        for k, v in ga.best_key.items():
-            if k in eval_map and eval_map[k] == v:
-                tot += 1
-        print(f'Correct symbols: {tot} / {len(ga.best_key)} ({tot / len(ga.best_key) * 100:.2f}%)')
+        correct_count = sum(1 for k, v in ga.best_key.items() if k in eval_map and eval_map[k] == v)
+        total_count = len(ga.best_key)
+        print(f'Correct symbols: {correct_count} / {total_count} ({correct_count / total_count * 100:.2f}%)')
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('source', type=str, help='Source file')
-    parser.add_argument('target', type=str, help='Target file')
-
-    parser.add_argument('-ng', '--n-gram', type=int, default=3, help='N-gram')
-    parser.add_argument('-s', '--num-symbols', type=int, default=50, help='Number of symbols')
-    parser.add_argument('-i', '--ignore', type=str, help='Ignore symbols')
-    parser.add_argument('-p', '--pop-size', type=int, default=1000, help='Population size')
-    parser.add_argument('-n', '--num-parents', type=int, default=500, help='Number of parents')
-    parser.add_argument('-m', '--mutation-rate', type=float, default=0.5, help='Mutation rate')
-    parser.add_argument('-c', '--crossover-rate', type=float, default=0.8, help='Crossover rate')
-    parser.add_argument('-g', '--generations', type=int, default=500, help='Number of generations')
-    parser.add_argument('-nc', '--n-cores', type=int, default=0, help='Number of cores')
-    parser.add_argument('-e', '--eval', type=str, help='Evaluation file')
-    parser.add_argument('-o', '--output', type=str, help='Output folder')
-
-    args = parser.parse_args()
-
+    args = parse_arguments()
     main(args)
 
