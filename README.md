@@ -1,6 +1,6 @@
 # ga-decipher
 
-A simple implementation of a genetic algorithm to solve substitution ciphers, aimed at the decipherment of unknown scripts. The model uses a simple n-gram model to score candidate mappings. The program was devised to solve the Rongorongo script of Easter Island, but in theory can be used for any other unknown script.
+A simple implementation of a genetic algorithm to solve substitution ciphers, aimed at the decipherment of unknown scripts. The model uses a simple n-gram model to score candidate mappings and a genetic algorithm to search for the best solution. The program was devised to solve the Rongorongo script of Easter Island, but in theory can be used for any other unknown script.
 
 ## Installation
 
@@ -58,7 +58,7 @@ The model correctly identifies 40-50% of the (syllabic) symbols in both corpora.
 
 The Rapanui language model was fitted on a sample of short recitations and songs assumed to represent the genres and language present in Rongorongo (Barthel 1960; Blixen 1979; Campbell 1971). For the written corpus, the set of texts removing parallel passages and repetitive structured sequences usually called the "independent text" (Horley 2007) was used. The original Barthel encoding was converted to the simplified proposal by Horley (2021). For details, the reader is referred to the discussion and code in <a href="https://github.com/jgregoriods/rongopy">my other rongorongo repository</a>.
 
-A second corpus was prepared by removing the anthropomorphs 200, 381 and 256, as well as glyph 3, under the assumption the former are allographs and are frequently omitted, and that the latter appears to be a decorator (see the discussion <a href="https://github.com/jgregoriods/rongopy">here</a>). The results are presented in the table below.
+A second corpus was prepared by removing the anthropomorphs 200, 381 and 256, as well as glyph 3, under the assumption the former are allographs and are frequently omitted, and that the latter appears to be a decorator (see the discussion <a href="https://github.com/jgregoriods/rongopy/tree/master/ga_lstm">here</a>). The results are presented in the table below.
 
 
 | Glyph | Code | Syllable<sub>1</sub> | Syllable<sub>2</sub> |
@@ -77,3 +77,7 @@ A second corpus was prepared by removing the anthropomorphs 200, 381 and 256, as
 | <img src="img/430.png" height="32"> | 430 | ri | ha |
 | <img src="img/9.png" height="32"> | 9 | ha | ra |
 | <img src="img/5.png" height="32"> | 5 | o | te |
+
+It is curious that the readings of 600 as *ta* and 381 as *ka* have previously been suggested based on independent evidence (Guy 1990; Davletshin 2022).
+
+This is by no means an endorsement that the above solution is correct, as it heavily depends on the correct identification of the glyph inventory, the nature of rongorongo as mainly syllabic, the assumption that the chosen rapanui corpus is representative of the language in the glyphs, among other factors.
