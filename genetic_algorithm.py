@@ -83,7 +83,7 @@ class GeneticAlgorithm:
         Calculates the fitness of a genome.
     ox1(parent1: List[str], parent2: List[str]) -> List[str]
         Order crossover.
-    evolve(generations: int)
+    run(generations: int)
         Evolves the population for a number of generations.
     plot(filename: str = "")
         Plots the best and average scores of the population.
@@ -117,18 +117,18 @@ class GeneticAlgorithm:
         population_genes = [{self.source_symbols[i]: genome.genes[i]
                              for i in range(len(self.source_symbols))}
                              for genome in self.genomes]
-        
+
         for gene in population_genes:
             gene.update(self.freeze)
-        
+
         fitness = np.array(pool.map(self.fitness_function, population_genes))
-        
+
         pool.close()
         pool.join()
-        
+
         for i, genome in enumerate(self.genomes):
             genome.score = fitness[i]
-        
+
         end = time.time()
         print('Time elapsed: {:.2f}s'.format(end - start))
         print('Done')
@@ -179,7 +179,7 @@ class GeneticAlgorithm:
         pref, suff = missing[:i], missing[i:]
         return pref + segment + suff
 
-    def evolve(self, generations: int) -> None:
+    def run(self, generations: int) -> None:
         """
         Evolves the population for a number of generations.
 
@@ -273,4 +273,3 @@ class GeneticAlgorithm:
                     file.write(f'{k} {v}\n')
         except IOError as e:
             print(f'Error: Unable to write to file: {e}')
-

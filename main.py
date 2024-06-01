@@ -4,15 +4,19 @@ import os
 from ngram_model import NgramModel
 from genetic_algorithm import GeneticAlgorithm
 from processing import split_syllables, get_top_symbols, split_symbols
+from beam_search import BeamSearch
 
 
 DEFAULT_N_GRAM = 3
 DEFAULT_NUM_SYMBOLS = 50
+DEFAULT_NODES = 10
+DEFAULT_BEAM_WIDTH = 100
 DEFAULT_POP_SIZE = 2000
 DEFAULT_NUM_PARENTS = 1000
 DEFAULT_MUTATION_RATE = 0.5
 DEFAULT_CROSSOVER_RATE = 0.8
-DEFAULT_GENERATIONS = 1000
+DEFAULT_GENERATIONS = 200
+DEFAULT_ALGORITHM = 'bs'
 DEFAULT_N_CORES = 0
 
 
@@ -23,11 +27,14 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('source', type=str, help='Source file')
     parser.add_argument('target', type=str, help='Target file')
+    parser.add_argument('-a', '--algorithm', type=str, default=DEFAULT_ALGORITHM, help='Algorithm')
     parser.add_argument('-ng', '--n-gram', type=int, default=DEFAULT_N_GRAM, help='N-gram')
     parser.add_argument('-s', '--num-symbols', type=int, default=DEFAULT_NUM_SYMBOLS, help='Number of symbols')
     parser.add_argument('-i', '--ignore', type=str, help='Ignore symbols')
-    parser.add_argument('-n', '--pop-size', type=int, default=DEFAULT_POP_SIZE, help='Population size')
-    parser.add_argument('-p', '--num-parents', type=int, default=DEFAULT_NUM_PARENTS, help='Number of parents')
+    parser.add_argument('-n', '--nodes', type=int, default=DEFAULT_NODES, help='Number of nodes (BS)')
+    parser.add_argument('-bw', '--beam-width', type=int, default=DEFAULT_BEAM_WIDTH, help='Beam width (BS)')
+    parser.add_argument('-p', '--pop-size', type=int, default=DEFAULT_POP_SIZE, help='Population size (GA)')
+    parser.add_argument('-np', '--num-parents', type=int, default=DEFAULT_NUM_PARENTS, help='Number of parents')
     parser.add_argument('-m', '--mutation-rate', type=float, default=DEFAULT_MUTATION_RATE, help='Mutation rate')
     parser.add_argument('-c', '--crossover-rate', type=float, default=DEFAULT_CROSSOVER_RATE, help='Crossover rate')
     parser.add_argument('-g', '--generations', type=int, default=DEFAULT_GENERATIONS, help='Number of generations')
@@ -70,18 +77,29 @@ def main(args: argparse.Namespace) -> None:
     source_symbols = get_top_symbols(source_text_split, num_symbols, ignore)
     target_symbols = get_top_symbols(target_text_split, num_symbols)
 
-    ga = GeneticAlgorithm(
-        source_symbols,
-        target_symbols,
-        source_text_split,
-        bigram_model,
-        args.pop_size,
-        args.num_parents,
-        args.mutation_rate,
-        args.crossover_rate,
-        n_cores=args.n_cores
-    )
-    ga.evolve(args.generations)
+    if args.algorithm == 'ga':
+        solver = GeneticAlgorithm(
+            source_symbols,
+            target_symbols,
+            source_text_split,
+            bigram_model,
+            args.pop_size,
+            args.num_parents,
+            args.mutation_rate,
+            args.crossover_rate,
+            n_cores=args.n_cores
+        )
+    elif args.algorithm == 'bs':
+        solver = BeamSearch(
+            source_symbols,
+            target_symbols,
+            source_text_split,
+            bigram_model,
+            args.nodes,
+            args.beam_width
+        )
+
+    solver.run(args.generations)
 
     if args.output:
         output_folder = args.output
@@ -91,8 +109,8 @@ def main(args: argparse.Namespace) -> None:
             except OSError as e:
                 print(f'Error: Could not create output directory {args.output}: {e}')
                 return
-        ga.write_result(os.path.join(output_folder, 'best_key.txt'))
-        ga.plot(os.path.join(output_folder, 'plot.png'))
+        solver.write_result(os.path.join(output_folder, 'best_key.txt'))
+        solver.plot(os.path.join(output_folder, 'plot.png'))
 
     if args.eval:
         try:
@@ -104,12 +122,11 @@ def main(args: argparse.Namespace) -> None:
             print(f'Error: Could not read file {args.eval}: {e}')
             return
 
-        correct_count = sum(1 for k, v in ga.best_key.items() if k in eval_map and eval_map[k] == v)
-        total_count = len(ga.best_key)
+        correct_count = sum(1 for k, v in solver.best_key.items() if k in eval_map and eval_map[k] == v)
+        total_count = len(solver.best_key)
         print(f'Correct symbols: {correct_count} / {total_count} ({correct_count / total_count * 100:.2f}%)')
 
 
 if __name__ == '__main__':
     args = parse_arguments()
     main(args)
-

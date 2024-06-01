@@ -48,7 +48,7 @@ def decode_texts(texts: List[List[str]], cipher_key: Dict[str, str]) -> List[str
 
 
 def calculate_final_score(source_texts: List[List[str]], cipher_key: Dict[str, str],
-                          ngram_model: NgramModel) -> float:
+                          ngram_model: NgramModel, method: str = 'log_prob') -> float:
     """
     Calculates the final score of a cipher key.
 
@@ -60,6 +60,8 @@ def calculate_final_score(source_texts: List[List[str]], cipher_key: Dict[str, s
         The cipher key to use.
     ngram_model : NgramModel
         The n-gram model to use.
+    method : str
+        The scoring method to use ('log_prob' or 'count').
 
     Returns
     -------
@@ -74,6 +76,8 @@ def calculate_final_score(source_texts: List[List[str]], cipher_key: Dict[str, s
         all_sequences.extend(valid_sequences)
     score = 0
     for sequence in all_sequences:
-        score += ngram_model.score(sequence.split())
+        if method == 'log_prob':
+            score += ngram_model.log_prob(sequence.split())
+        elif method == 'count':
+            score += ngram_model.score(sequence.split())
     return score
-
