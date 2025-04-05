@@ -3,8 +3,8 @@ import numpy as np
 import time
 
 from typing import List
-from ngram_model import NgramModel
-from scoring import calculate_final_score
+from ga_decipher.ngram_model import NgramModel
+from ga_decipher.scoring import calculate_final_score
 
 
 class BeamSearch:
@@ -135,3 +135,21 @@ class BeamSearch:
                     file.write(f'{k} {v}\n')
         except IOError as e:
             print(f'Error: Unable to write to file: {e}')
+
+    def evaluate(self, eval_text: List[str]) -> None:
+        """
+        Evaluates the best key against a set of known values.
+
+        Parameters
+        ----------
+        eval_text : List[str]
+            The symbols and respective values to be used for evaluation.
+        """
+        eval_symbols = [x.split() for x in eval_text]
+        eval_map = {x[0]: x[1] for x in eval_symbols}
+
+        correct_count = sum(1 for k, v in self.best_key.items() if k in eval_map and eval_map[k] == v)
+        total_count = len(self.best_key)
+
+        print(f'Correct symbols: {correct_count} / {total_count} ({correct_count / total_count * 100:.2f}%)')
+

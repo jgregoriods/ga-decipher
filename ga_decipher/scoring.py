@@ -1,5 +1,5 @@
 from typing import List, Dict
-from ngram_model import NgramModel
+from ga_decipher.ngram_model import NgramModel
 
 
 def decode_line(line: List[str], cipher_key: Dict[str, str]) -> str:

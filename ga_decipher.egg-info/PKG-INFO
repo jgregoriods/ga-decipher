@@ -1,3 +1,17 @@
+Metadata-Version: 2.4
+Name: ga-decipher
+Version: 0.1.0
+Summary: A package for deciphering scripts using genetic algorithms and beam search.
+Author: Jonas Gregorio
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+Requires-Dist: matplotlib
+Requires-Dist: numpy
+Dynamic: requires-dist
+
 # ga-decipher
 
 A simple implementation of beam search and a genetic algorithm to solve substitution ciphers, aimed at the decipherment of unknown scripts. The model uses a simple n-gram model to score candidate mappings and beam search or a genetic algorithm to search for the best solution. The program was devised to solve the Rongorongo script of Easter Island, but in theory can be used for any other unknown script.

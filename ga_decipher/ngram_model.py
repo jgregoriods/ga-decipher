@@ -60,7 +60,7 @@ class NgramModel:
                 log_prob += np.log(1e-10)
         return log_prob
 
-    def fit(self, source_texts: List[List[str]]) -> None:
+    def fit(self, source_texts: List[List[str]]) -> 'NgramModel':
         """
         Fits the n-gram model to the source texts.
 
@@ -80,3 +80,4 @@ class NgramModel:
             total = sum(probs.values())
             for key in probs:
                 probs[key] /= total
+        return self
