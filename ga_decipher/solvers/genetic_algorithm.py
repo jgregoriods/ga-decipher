@@ -6,6 +6,7 @@ import time
 from typing import List, Dict
 from ga_decipher.ngram_model import NgramModel
 from ga_decipher.scoring import calculate_final_score
+from ga_decipher.solvers.solver import Solver
 
 
 class Genome:
@@ -48,7 +49,7 @@ class Genome:
         self.score = -1
 
 
-class GeneticAlgorithm:
+class GeneticAlgorithm(Solver):
     """
     A class to represent a genetic algorithm for solving the substitution
     cipher problem.
@@ -83,8 +84,8 @@ class GeneticAlgorithm:
         Calculates the fitness of a genome.
     ox1(parent1: List[str], parent2: List[str]) -> List[str]
         Order crossover.
-    run(generations: int)
-        Evolves the population for a number of generations.
+    run(iterations: int)
+        Evolves the population for a number of iterations.
     plot(filename: str = "")
         Plots the best and average scores of the population.
     write_result(filename: str)
@@ -95,10 +96,7 @@ class GeneticAlgorithm:
                  population_size: int, num_parents: int, prob_mut: float,
                  prob_cross: float, freeze: Dict[str, str] = {},
                  n_cores: int = 0) -> None:
-        self.source_symbols = source_symbols
-        self.target_symbols = target_symbols
-        self.source_text = source_text
-        self.model = model
+        super().__init__(source_symbols, target_symbols, source_text, model)
         self.population_size = population_size
         self.num_parents = num_parents
         self.num_children = int(np.ceil(population_size / num_parents * 2))
@@ -179,18 +177,18 @@ class GeneticAlgorithm:
         pref, suff = missing[:i], missing[i:]
         return pref + segment + suff
 
-    def run(self, generations: int) -> None:
+    def run(self, iterations: int, callback: callable = None) -> None:
         """
-        Evolves the population for a number of generations.
+        Evolves the population for a number of iterations.
 
         Parameters
         ----------
-        generations : int
-            The number of generations.
+        iterations : int
+            The number of iterations.
         """
         start = time.time()
         print('\nEvolving...')
-        for i in range(generations):
+        for i in range(iterations):
             parents = self.genomes[:self.num_parents]
             np.random.shuffle(parents)
             children = []
@@ -227,67 +225,15 @@ class GeneticAlgorithm:
                              for i in range(len(self.source_symbols))}
             self.best_key.update(self.freeze)
 
-            if (i + 1) % 10 == 0:
-                print(f'Generation {i + 1} done')
-                print(f'Best: {self.best_scores[-1]}')
-                print(f'Avg: {self.avg_scores[-1]}')
-                print(f'Best key: {dict(zip(self.source_symbols[:5], self.genomes[0].genes[:5]))} ...\n')
+            if callback is not None:
+                callback(i, self.best_key, self.best_scores)
+            else:
+                if (i + 1) % 10 == 0:
+                    print(f'Generation {i + 1} done')
+                    print(f'Best: {self.best_scores[-1]}')
+                    print(f'Avg: {self.avg_scores[-1]}')
+                    print(f'Best key: {dict(zip(self.source_symbols[:5], self.genomes[0].genes[:5]))} ...\n')
 
         end = time.time()
         print('Time elapsed: {:.2f}s'.format(end - start))
-
-    def plot(self, filename: str = '') -> None:
-        """
-        Plots the evolution of the best and average scores of the population.
-
-        Parameters
-        ----------
-        filename : str
-            The filename to save the plot to. If not provided, the plot is
-            shown.
-        """
-        plt.axes(xlabel='generation', ylabel='score')
-        plt.plot(self.best_scores)
-        plt.plot(self.avg_scores)
-        plt.legend(['best score', 'avg score'])
-        if filename:
-            try:
-                plt.savefig(filename)
-            except IOError as e:
-                print(f'Error: Unable to save plot to file: {e}')
-        else:
-            plt.show()
-
-    def write_result(self, filename: str) -> None:
-        """
-        Writes the best key to a file.
-
-        Parameters
-        ----------
-        filename : str
-            The filename to write the key to.
-        """
-        try:
-            with open(filename, 'w') as file:
-                for k, v in self.best_key.items():
-                    file.write(f'{k} {v}\n')
-        except IOError as e:
-            print(f'Error: Unable to write to file: {e}')
-
-    def evaluate(self, eval_text: List[str]) -> None:
-        """
-        Evaluates the best key against a set of known values.
-
-        Parameters
-        ----------
-        eval_text : List[str]
-            The symbols and respective values to be used for evaluation.
-        """
-        eval_symbols = [x.split() for x in eval_text]
-        eval_map = {x[0]: x[1] for x in eval_symbols}
-
-        correct_count = sum(1 for k, v in self.best_key.items() if k in eval_map and eval_map[k] == v)
-        total_count = len(self.best_key)
-
-        print(f'Correct symbols: {correct_count} / {total_count} ({correct_count / total_count * 100:.2f}%)')
 
